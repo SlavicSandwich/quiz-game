@@ -3,21 +3,30 @@ package quiz
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Quiz struct {
 	problems          []Problem
-	NumberOfQuestions int
 	currentIndex      int
 	rightAnswersCount int
+	timeLimit         time.Duration
 }
 
-func NewQuiz(problems []Problem) Quiz {
+func NewQuiz(problems []Problem, timeLimit time.Duration) Quiz {
 	return Quiz{
-		problems:          problems,
-		NumberOfQuestions: len(problems),
-		currentIndex:      0,
+		problems:     problems,
+		currentIndex: 0,
+		timeLimit:    timeLimit,
 	}
+}
+
+func (quiz *Quiz) GetNumberOfQuestions() int {
+	return len(quiz.problems)
+}
+
+func (quiz *Quiz) StartTimer() *time.Timer {
+	return time.NewTimer(quiz.timeLimit)
 }
 
 func (quiz *Quiz) GetQuestion() string {
@@ -38,7 +47,7 @@ func (quiz *Quiz) getCurrentProblem() Problem {
 }
 
 func (quiz *Quiz) GetResult() string {
-	return fmt.Sprintf("Got %v out of %v", quiz.rightAnswersCount, quiz.NumberOfQuestions)
+	return fmt.Sprintf("Got %v out of %v", quiz.rightAnswersCount, quiz.GetNumberOfQuestions())
 }
 
 type Problem struct {
@@ -50,7 +59,7 @@ func ConvertStringsToProblems(problemStrings []string) []Problem {
 	var problems []Problem
 	for _, str := range problemStrings {
 		splitStr := strings.Split(str, ";")
-		problems = append(problems, Problem{splitStr[0], splitStr[1]})
+		problems = append(problems, Problem{splitStr[0], strings.TrimSpace(splitStr[1])})
 	}
 	return problems
 }

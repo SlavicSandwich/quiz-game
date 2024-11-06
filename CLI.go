@@ -24,16 +24,27 @@ func NewCLI(in io.Reader, out io.Writer, quiz Quiz) *CLI {
 func (cli *CLI) PlayQuiz() {
 	fmt.Fprint(cli.out, "Answer all the questions right, if you can :)\n")
 
-	for i := 0; i < cli.quiz.NumberOfQuestions; i++ {
+	timer := cli.quiz.StartTimer()
+	inputChan := make(chan string)
+
+	for i := 0; i < cli.quiz.GetNumberOfQuestions(); i++ {
 		fmt.Fprint(cli.out, cli.quiz.GetQuestion()+" ")
-		playerAnswer := cli.readLine()
-		cli.quiz.SubmitAnswer(playerAnswer)
+		go cli.readLine(inputChan)
+
+		select {
+		case <-timer.C:
+			fmt.Fprint(cli.out, "\nTime ran out!\n")
+			fmt.Fprint(cli.out, cli.quiz.GetResult())
+			return
+		case answer := <-inputChan:
+			cli.quiz.SubmitAnswer(answer)
+		}
 	}
 
 	fmt.Fprint(cli.out, cli.quiz.GetResult())
 }
 
-func (cli *CLI) readLine() string {
+func (cli *CLI) readLine(inputChan chan string) {
 	cli.in.Scan()
-	return strings.TrimSpace(cli.in.Text())
+	inputChan <- strings.TrimSpace(cli.in.Text())
 }
